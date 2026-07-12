@@ -48,4 +48,10 @@ public class CalificacionServiceImpl implements CalificacionService {
     public List<Calificacion> listarPorUsuario(Integer idUsuario) {
         return calificacionRepository.findByUsuario_IdUsuario(idUsuario);
     }
+
+    // 🌟 NUEVO: La lógica real que va a la BD por todas las calificaciones
+    @Override
+    public List<Calificacion> listarTodasLasCalificaciones() {
+        return calificacionRepository.findAll();
+    }
 }

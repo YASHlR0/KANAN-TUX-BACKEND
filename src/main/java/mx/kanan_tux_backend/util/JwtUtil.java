@@ -1,7 +1,6 @@
 package mx.kanan_tux_backend.util;
 
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -14,24 +13,24 @@ import java.util.Date;
 @Component
 public class JwtUtil {
 
-    // 1. Spring inyecta la clave secreta desde el application.properties
     @Value("${jwt.secret}")
     private String secretKey;
 
     private Key key;
 
-    private final long EXPIRATION = 1000 * 60 * 60; // 1 hora
+    private final long EXPIRATION = 1000L * 60 * 60 * 24; // 24 horas
 
-    // 2. Se ejecuta automáticamente al arrancar para decodificar la clave
     @PostConstruct
     protected void init() {
         byte[] keyBytes = Base64.getDecoder().decode(secretKey);
         this.key = Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String generateToken(String correo) {
+    // AHORA RECIBE EL ROL Y LO GUARDA EN EL TOKEN
+    public String generateToken(String correo, String rol) {
         return Jwts.builder()
                 .setSubject(correo)
+                .claim("rol", rol) // <-- Guardamos el rol
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION))
                 .signWith(key)
@@ -45,5 +44,15 @@ public class JwtUtil {
                 .parseClaimsJws(token)
                 .getBody()
                 .getSubject();
+    }
+
+    // NUEVO MÉTODO PARA EXTRAER EL ROL DEL TOKEN
+    public String extractRol(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .get("rol", String.class);
     }
 }

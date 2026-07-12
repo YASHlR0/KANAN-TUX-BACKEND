@@ -10,6 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/calificaciones")
+@CrossOrigin(origins = "*") // Asegura que Cristian no tenga bloqueos de CORS desde Android
 public class CalificacionController {
 
     private final CalificacionService calificacionService;
@@ -28,5 +29,11 @@ public class CalificacionController {
     @GetMapping("/usuario/{idUsuario}")
     public ResponseEntity<List<Calificacion>> obtenerPorUsuario(@PathVariable Integer idUsuario) {
         return ResponseEntity.ok(calificacionService.listarPorUsuario(idUsuario));
+    }
+
+    // Endpoint global para que el Administrador vea TODAS las calificaciones de la BD (GET)
+    @GetMapping
+    public ResponseEntity<List<Calificacion>> obtenerTodas() {
+        return ResponseEntity.ok(calificacionService.listarTodasLasCalificaciones());
     }
 }
