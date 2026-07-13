@@ -10,4 +10,7 @@ public interface CalificacionService {
 
     // Por si queremos ver las calificaciones de un usuario específico
     List<Calificacion> listarPorUsuario(Integer idUsuario);
+
+    // 🌟 NUEVO: Endpoint global para el Administrador
+    List<Calificacion> listarTodasLasCalificaciones();
 }

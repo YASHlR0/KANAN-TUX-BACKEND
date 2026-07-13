@@ -5,7 +5,6 @@ import mx.kanan_tux_backend.entity.Rol;
 import mx.kanan_tux_backend.entity.Usuario;
 import mx.kanan_tux_backend.repository.RolRepository;
 import mx.kanan_tux_backend.repository.UsuarioRepository;
-// ESTE IMPORT ES VITAL AQUÍ TAMBIÉN
 import mx.kanan_tux_backend.service.UsuarioService;
 
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -40,8 +39,13 @@ public class UsuarioServiceImpl implements UsuarioService {
         usuario.setEstado("ACTIVO");
         usuario.setFechaRegistro(LocalDateTime.now());
 
-        Rol rol = rolRepository.findById(dto.getIdRol())
-                .orElseThrow(() -> new RuntimeException("Error: Rol no encontrado en la base de datos"));
+        // 🛡️ REGLA DE SEGURIDAD ESTRICTA:
+        // Forzamos el ID 2 (USER) para cualquier registro nuevo desde la App.
+        // Nunca volvemos a confiar en dto.getIdRol() para cuentas públicas.
+        Integer ID_ROL_USUARIO_NORMAL = 2;
+
+        Rol rol = rolRepository.findById(ID_ROL_USUARIO_NORMAL)
+                .orElseThrow(() -> new RuntimeException("Error: Rol USER no encontrado en la base de datos"));
         usuario.setRol(rol);
 
         return usuarioRepository.save(usuario);
