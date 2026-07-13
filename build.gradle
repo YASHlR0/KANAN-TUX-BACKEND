@@ -33,7 +33,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 
-    // 📧 NUEVO: Librería para enviar correos electrónicos
+    // 📧 Librería para enviar correos electrónicos
     implementation 'org.springframework.boot:spring-boot-starter-mail'
 
     // Base de datos y herramientas
