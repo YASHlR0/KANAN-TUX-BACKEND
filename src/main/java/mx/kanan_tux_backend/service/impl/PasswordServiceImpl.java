@@ -7,7 +7,7 @@ import mx.kanan_tux_backend.entity.Usuario;
 import mx.kanan_tux_backend.repository.PasswordResetTokenRepository;
 import mx.kanan_tux_backend.repository.UsuarioRepository;
 import mx.kanan_tux_backend.service.PasswordService;
-import mx.kanan_tux_backend.service.EmailService; // <-- Importación del correo
+import mx.kanan_tux_backend.service.EmailService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,9 +20,8 @@ public class PasswordServiceImpl implements PasswordService {
     private final UsuarioRepository usuarioRepository;
     private final PasswordResetTokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
-    private final EmailService emailService; // <-- Variable del correo
+    private final EmailService emailService;
 
-    // Constructor con los 4 servicios
     public PasswordServiceImpl(UsuarioRepository usuarioRepository,
                                PasswordResetTokenRepository tokenRepository,
                                PasswordEncoder passwordEncoder,
@@ -34,24 +33,22 @@ public class PasswordServiceImpl implements PasswordService {
     }
 
     @Override
-    @Transactional
+    // 💡 SIN @Transactional AQUÍ: Guarda el token, libera la BD de inmediato y LUEGO manda el correo.
     public void solicitarRecuperacion(ForgotPasswordDTO dto) {
         Usuario usuario = usuarioRepository.findByCorreo(dto.getCorreo())
                 .orElseThrow(() -> new RuntimeException("No existe cuenta asociada a este correo."));
 
-        // Tu lógica original intacta para generar y guardar el token
         String tokenUnico = UUID.randomUUID().toString();
         PasswordResetToken miToken = new PasswordResetToken(tokenUnico, usuario, 15);
-        tokenRepository.save(miToken);
+        tokenRepository.save(miToken); // 🔓 La conexión a la base de datos se libera AQUÍ.
 
-        // NUEVO: Enviamos el correo real usando el token que acabamos de generar
+        // 📧 El correo se envía con la BD totalmente libre.
         emailService.enviarCorreoRecuperacion(usuario.getCorreo(), tokenUnico);
     }
 
     @Override
-    @Transactional
+    @Transactional // 🔒 Aquí SÍ se mantiene porque modifica contraseña y token juntos
     public void cambiarPassword(ResetPasswordDTO dto) {
-        // Tu lógica original de validación intacta
         PasswordResetToken tokenDb = tokenRepository.findByToken(dto.getToken())
                 .orElseThrow(() -> new RuntimeException("Token inválido o no existe."));
 
@@ -67,7 +64,6 @@ public class PasswordServiceImpl implements PasswordService {
         usuario.setPasswordHash(passwordEncoder.encode(dto.getNuevaPassword()));
         usuarioRepository.save(usuario);
 
-        // Quemar el token marcándolo como utilizado
         tokenDb.setUtilizado(true);
         tokenRepository.save(tokenDb);
     }
