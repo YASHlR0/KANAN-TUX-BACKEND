@@ -33,14 +33,14 @@ public class PasswordServiceImpl implements PasswordService {
     }
 
     @Override
-    // SIN @Transactional para liberar la BD inmediatamente antes del envío de correo
+    @Transactional // 👈 Se agregó esta anotación vital para evitar el error de Hibernate
     public void solicitarRecuperacion(ForgotPasswordDTO dto) {
         Usuario usuario = usuarioRepository.findByCorreo(dto.getCorreo())
                 .orElseThrow(() -> new RuntimeException("No existe cuenta asociada a este correo."));
 
         String tokenUnico = UUID.randomUUID().toString();
         PasswordResetToken miToken = new PasswordResetToken(tokenUnico, usuario, 15);
-        tokenRepository.save(miToken); // 🔓 Se guarda el token y se libera la BD
+        tokenRepository.save(miToken); // 🔓 Ahora sí se guarda el token sin reventar la conexión
 
         // 📧 Intentamos enviar el correo sin bloquear la respuesta de la API
         try {
