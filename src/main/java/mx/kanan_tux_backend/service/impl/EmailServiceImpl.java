@@ -1,48 +1,53 @@
 package mx.kanan_tux_backend.service.impl;
 
 import mx.kanan_tux_backend.service.EmailService;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class EmailServiceImpl implements EmailService {
 
-    private final JavaMailSender mailSender;
-
-    public EmailServiceImpl(JavaMailSender mailSender) {
-        this.mailSender = mailSender;
-    }
+    @Value("${brevo.api.key}")
+    private String apiKey;
 
     @Override
     public void enviarCorreoRecuperacion(String destinatario, String token) {
-        String enlace = "http://localhost:3000/reset-password?token=" + token;
+        String url = "https://api.brevo.com/v3/smtp/email";
+
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("api-key", apiKey);
+
+        // 📩 Remitente registrado en tu cuenta de Brevo
+        Map<String, Object> sender = Map.of("name", "Kanan Tux", "email", "credu.1406@gmail.com");
+        Map<String, Object> to = Map.of("email", destinatario);
+
+        Map<String, Object> body = Map.of(
+                "sender", sender,
+                "to", List.of(to),
+                "subject", "Kanan Tux - Recuperación de Contraseña",
+                "htmlContent", "<h3>Hola,</h3><p>Has solicitado restablecer tu contraseña en Kanan Tux.</p>" +
+                        "<p>Tu token de recuperación es: <b>" + token + "</b></p>" +
+                        "<p>Usa este token en tu aplicación para restablecer tu contraseña.</p>" +
+                        "<p>Si no solicitaste este cambio, puedes ignorar este correo.</p>"
+        );
+
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
 
         try {
-            SimpleMailMessage mensaje = new SimpleMailMessage();
-            mensaje.setTo(destinatario);
-            mensaje.setSubject("Kanan Tux - Recuperación de Contraseña");
-            mensaje.setText("Hola,\n\nHas solicitado restablecer tu contraseña en Kanan Tux.\n\n"
-                    + "Tu token de recuperación es:\n" + token + "\n\n"
-                    + "Usa este token en tu aplicación para restablecer tu contraseña.\n\n"
-                    + "Si no solicitaste este cambio, puedes ignorar este correo.");
-
-            // 📤 Intento de envío real a través de Gmail
-            mailSender.send(mensaje);
-            System.out.println("✅ Correo enviado exitosamente a: " + destinatario);
-
+            restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+            System.out.println("✅ ¡Correo real enviado exitosamente por Brevo a: " + destinatario + "!");
         } catch (Exception e) {
-            // ⚠️ Si Railway bloquea el puerto (Timeout), la app atrapa el error y NO crashea.
-            System.err.println("❌ Railway bloqueó el envío SMTP: " + e.getMessage());
-
-            // 🚀 Plan de respaldo: Imprimir en consola para que no te quedes atorado
-            System.out.println("\n=================================================");
-            System.out.println("🚀 [SIMULACIÓN DE RESPALDO - KANAN TUX]");
-            System.out.println("📧 CORREO DE RECUPERACIÓN GENERADO");
-            System.out.println("📩 Para: " + destinatario);
-            System.out.println("🔑 Token: " + token);
-            System.out.println("🔗 Enlace: " + enlace);
-            System.out.println("=================================================\n");
+            System.err.println("❌ Falló el envío con la API de Brevo: " + e.getMessage());
         }
     }
 }
