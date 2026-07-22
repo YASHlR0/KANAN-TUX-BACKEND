@@ -36,6 +36,7 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/password/**").permitAll() // 👈 LÍNEA NUEVA: Permite recuperar contraseña sin estar logueado
                         .requestMatchers(HttpMethod.POST, "/api/usuarios").permitAll()
                         .requestMatchers("/error").permitAll()
 
