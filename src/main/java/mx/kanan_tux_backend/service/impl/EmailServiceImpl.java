@@ -6,14 +6,6 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 @Service
-public class EmailServiceImpl implements EmailService package mx.kanan_tux_backend.service.impl;
-
-import mx.kanan_tux_backend.service.EmailService;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.stereotype.Service;
-
-@Service
 public class EmailServiceImpl implements EmailService {
 
     private final JavaMailSender mailSender;
