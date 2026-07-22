@@ -33,21 +33,26 @@ public class PasswordServiceImpl implements PasswordService {
     }
 
     @Override
-    // 💡 SIN @Transactional AQUÍ: Guarda el token, libera la BD de inmediato y LUEGO manda el correo.
+    // SIN @Transactional para liberar la BD inmediatamente antes del envío de correo
     public void solicitarRecuperacion(ForgotPasswordDTO dto) {
         Usuario usuario = usuarioRepository.findByCorreo(dto.getCorreo())
                 .orElseThrow(() -> new RuntimeException("No existe cuenta asociada a este correo."));
 
         String tokenUnico = UUID.randomUUID().toString();
         PasswordResetToken miToken = new PasswordResetToken(tokenUnico, usuario, 15);
-        tokenRepository.save(miToken); // 🔓 La conexión a la base de datos se libera AQUÍ.
+        tokenRepository.save(miToken); // 🔓 Se guarda el token y se libera la BD
 
-        // 📧 El correo se envía con la BD totalmente libre.
-        emailService.enviarCorreoRecuperacion(usuario.getCorreo(), tokenUnico);
+        // 📧 Intentamos enviar el correo sin bloquear la respuesta de la API
+        try {
+            emailService.enviarCorreoRecuperacion(usuario.getCorreo(), tokenUnico);
+        } catch (Exception e) {
+            // Si la conexión a Gmail falla o expira, se registra en logs pero NO interrumpe a Android
+            System.err.println("Error al enviar el correo de recuperación: " + e.getMessage());
+        }
     }
 
     @Override
-    @Transactional // 🔒 Aquí SÍ se mantiene porque modifica contraseña y token juntos
+    @Transactional // Mantiene transacción porque actualiza la clave y deshabilita el token
     public void cambiarPassword(ResetPasswordDTO dto) {
         PasswordResetToken tokenDb = tokenRepository.findByToken(dto.getToken())
                 .orElseThrow(() -> new RuntimeException("Token inválido o no existe."));
