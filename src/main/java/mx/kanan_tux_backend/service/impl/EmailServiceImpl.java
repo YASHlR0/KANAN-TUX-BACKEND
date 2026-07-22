@@ -3,6 +3,7 @@ package mx.kanan_tux_backend.service.impl;
 import mx.kanan_tux_backend.service.EmailService;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async; // 👈 1. IMPORTACIÓN NUEVA
 import org.springframework.stereotype.Service;
 
 @Service
@@ -14,6 +15,7 @@ public class EmailServiceImpl implements EmailService {
         this.mailSender = mailSender;
     }
 
+    @Async // 👈 2. ANOTACIÓN NUEVA: Ejecuta el envío en segundo plano
     @Override
     public void enviarCorreoRecuperacion(String destinatario, String token) {
         // Esta es la URL que tu compa del Front va a configurar
