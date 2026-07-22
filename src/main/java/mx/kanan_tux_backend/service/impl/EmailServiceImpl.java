@@ -1,37 +1,46 @@
 package mx.kanan_tux_backend.service.impl;
 
 import mx.kanan_tux_backend.service.EmailService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.Map;
 
 @Service
 public class EmailServiceImpl implements EmailService {
 
-    @Autowired
-    private JavaMailSender mailSender;
-
-    @Value("${spring.mail.username:credu.1406@gmail.com}")
-    private String remitente;
+    @Value("${RESEND_API_KEY:re_ML5zGGD3_DRXxVGr8DgYrgacyVRXtAZsw}")
+    private String apiKey;
 
     @Override
     public void enviarCorreoRecuperacion(String destinatario, String token) {
-        try {
-            SimpleMailMessage mensaje = new SimpleMailMessage();
-            mensaje.setFrom(remitente);
-            mensaje.setTo(destinatario);
-            mensaje.setSubject("Kanan Tux - Recuperación de Contraseña");
-            mensaje.setText("Hola,\n\nHas solicitado restablecer tu contraseña en Kanan Tux.\n\n"
-                    + "Tu token de recuperación es: " + token + "\n\n"
-                    + "Usa este token en tu aplicación para restablecer tu contraseña.\n\n"
-                    + "Si no solicitaste este cambio, puedes ignorar este correo.");
+        String url = "https://api.resend.com/emails";
 
-            mailSender.send(mensaje);
-            System.out.println("✅ ¡Correo real enviado exitosamente vía Gmail SMTP a: " + destinatario + "!");
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(apiKey);
+
+        Map<String, Object> body = Map.of(
+                "from", "Kanan Tux <onboarding@resend.dev>",
+                "to", new String[]{destinatario},
+                "subject", "Kanan Tux - Recuperación de Contraseña",
+                "html", "<h3>Hola,</h3><p>Has solicitado restablecer tu contraseña en Kanan Tux.</p>" +
+                        "<p>Tu token de recuperación es: <b>" + token + "</b></p>" +
+                        "<p>Si no solicitaste este cambio, puedes ignorar este correo.</p>"
+        );
+
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+
+        try {
+            restTemplate.postForEntity(url, entity, String.class);
+            System.out.println("✅ Correo enviado exitosamente vía Resend API a: " + destinatario);
         } catch (Exception e) {
-            System.err.println("❌ Falló el envío con Gmail SMTP: " + e.getMessage());
+            System.err.println("❌ Error enviando correo vía Resend: " + e.getMessage());
             e.printStackTrace();
         }
     }
